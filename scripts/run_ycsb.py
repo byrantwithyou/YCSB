@@ -49,8 +49,9 @@ def run_ycsb():
         '"rocksdb", comm, 7) == 0/ {@ = hist(args->ret) }' + r"'"
     p = subprocess.Popen(trace_cmd, shell=True)
     trace_pid = p.pid
-    ycsb_cmd = "./bin/ycsb {rl} rocksdb -s -p recordcount={rc} -p operationcount={oc} -P workloads/workload{workload} -p rocksdb.dir={DIR} -threads={C} -p rocksdb.optionsfile=option.ini".format(
+    ycsb_cmd = "./bin/ycsb {rl} rocksdb -s -p recordcount={rc} -p operationcount={oc} -P workloads/workload{workload} -p rocksdb.dir={DIR} -threads {C} -p rocksdb.optionsfile=option.ini".format(
         rl=args.type, rc=args.r, oc=args.o, workload=args.workload, DIR=DBDIR, C=args.c)
+    print(ycsb_cmd)
     exec_cmd(ycsb_cmd, cwd=SRC_PATH)
     exec_cmd("sleep 10")
     os.kill(trace_pid, signal.SIGINT)
