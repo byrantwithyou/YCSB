@@ -54,6 +54,9 @@ def run_ycsb():
     print(ycsb_cmd)
     exec_cmd(ycsb_cmd, cwd=SRC_PATH)
     exec_cmd("sleep 10")
+    print("==========================================")
+    print(trace_cmd)
+    print("==========================================")
     os.kill(trace_pid, signal.SIGINT)
 
 
