@@ -57,7 +57,7 @@ def run_ycsb():
     print("==========================================")
     print(trace_cmd)
     print("==========================================")
-    os.kill(trace_pid, signal.SIGINT)
+    os.kill(trace_pid, signal.CTRL_C_EVENT)
 
 
 def handle_err():
