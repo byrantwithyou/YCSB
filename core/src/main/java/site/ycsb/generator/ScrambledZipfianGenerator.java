@@ -18,6 +18,7 @@
 package site.ycsb.generator;
 
 import site.ycsb.Utils;
+import java.io.*;
 
 /**
  * A generator of a zipfian distribution. It produces a sequence of items, such
@@ -100,6 +101,10 @@ public class ScrambledZipfianGenerator extends NumberGenerator {
       if (zipfianconstant == USED_ZIPFIAN_CONSTANT[index]) {
         gen = new ZipfianGenerator(0, ITEM_COUNT, zipfianconstant, ZETAN[index]);
         notFound = false;
+        System.out.println("==============================");
+        System.out.println(USED_ZIPFIAN_CONSTANT[index]);
+        System.out.println(ZETAN[index]);
+        System.out.println("==============================");
         break;
       }
     }
