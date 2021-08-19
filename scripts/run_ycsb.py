@@ -4,26 +4,6 @@ import os
 import signal
 import argparse
 import subprocess
-from subprocess import Popen, PIPE, STDOUT
-FILE_PATH = os.path.abspath(os.path.dirname(__file__))
-SRC_PATH = os.path.normpath(os.path.join(FILE_PATH, ".."))
-parser = argparse.ArgumentParser()
-parser.add_argument("-c", default=1, type=int,
-                    help="the number of client thread")
-parser.add_argument(
-    "workload", help="the workload from YCSB workload, can be one of a,b,c,d,e")
-parser.add_argument("type", help="workload type, can be `load` or `run`")
-parser.add_argument("-sstsize", default=64, type=int,
-                    help="the size of the sstable in MB")
-parser.add_argument("-z", default=0.99, type=float,
-                    help="zipfian distribution value(0.5-0.99)")
-parser.add_argument("-o", default=5000000, type=int, help="operation count")
-parser.add_argument("-r", default=5000000, type=int, help="record count")
-parser.add_argument("-d", default="/tmp/ycsb-rocksdb-data",
-                    help="directory to hold the database file, default is /tmp/ycsb-rocksdb-data")
-parser.add_argument("-f", default="result",
-                    help="filename to hold the workload profiling result")
-args = parser.parse_args()
 
 
 def exec_cmd(cmd, out=None, cwd=None):
@@ -46,18 +26,14 @@ def run_ycsb():
     global DBDIR
     exec_cmd("sudo -v")
     trace_cmd = "sudo bpftrace -o %s" % args.f + \
-        " -e 'tracepoint:syscalls:sys_exit_write /strncmp(" + \
-        '"rocksdb", comm, 7) == 0/ {@ = hist(args->ret) }' + r"'"
-    p = subprocess.Popen(trace_cmd, stdout=PIPE, stdin=PIPE, stderr=STDOUT)
+        " -e ' tracepoint:syscalls:sys_exit_write /strncmp(" + \
+        '"rocksdb", comm, 7) == 0/ {@ = hist(args->ret) } interval:s:1 { print(@);  }' + r"'"
+    p = subprocess.Popen(trace_cmd, shell=True)
     ycsb_cmd = "./bin/ycsb {rl} rocksdb -s -p recordcount={rc} -p operationcount={oc} -P workloads/workload{workload} -p rocksdb.dir={DIR} -threads {C} -p rocksdb.optionsfile=option.ini".format(
         rl=args.type, rc=args.r, oc=args.o, workload=args.workload, DIR=DBDIR, C=args.c)
-    print(ycsb_cmd)
     exec_cmd(ycsb_cmd, cwd=SRC_PATH)
     exec_cmd("sleep 10")
-    print("==========================================")
-    print(trace_cmd)
-    p.communicate(input='\x03')
-    print("==========================================")
+    os.kill(p.pid, signal.SIGINT)
 
 
 def handle_err():
@@ -92,8 +68,30 @@ def deal_with_zipfian():
 
 
 if __name__ == "__main__":
+    FILE_PATH = os.path.abspath(os.path.dirname(__file__))
+    SRC_PATH = os.path.normpath(os.path.join(FILE_PATH, ".."))
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-c", default=1, type=int,
+                        help="the number of client thread")
+    parser.add_argument(
+        "workload", help="the workload from YCSB workload, can be one of a,b,c,d,e")
+    parser.add_argument("type", help="workload type, can be `load` or `run`")
+    parser.add_argument("-sstsize", default=64, type=int,
+                        help="the size of the sstable in MB")
+    parser.add_argument("-z", default=0.99, type=float,
+                        help="zipfian distribution value(0.5-0.99)")
+    parser.add_argument("-o", default=5000000, type=int,
+                        help="operation count")
+    parser.add_argument("-r", default=5000000, type=int, help="record count")
+    parser.add_argument("-d", default="/tmp/ycsb-rocksdb-data",
+                        help="directory to hold the database file, default is /tmp/ycsb-rocksdb-data")
+    parser.add_argument("-f", default="result",
+                        help="filename to hold the workload profiling result")
+    args = parser.parse_args()
     pre_work()
-    if args.r <= 0 or args.o <= 0 or args.c <= 0 or args.sstsize <= 0 or args.z > 0.99 or args.z < 0.5:
+    if args.r <= 0 or args.o <= 0 or args.c <= 0 or args.sstsize <= 0:
+        handle_err()
+    if not args.z in [0.99, 0.5, 0.6, 0.7, 0.8, 0.9]:
         handle_err()
     if "abcde".find(args.workload) == -1 or "runload".find(args.type) == -1:
         handle_err()

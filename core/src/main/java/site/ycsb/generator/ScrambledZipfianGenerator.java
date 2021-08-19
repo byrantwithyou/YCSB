@@ -20,24 +20,33 @@ package site.ycsb.generator;
 import site.ycsb.Utils;
 
 /**
- * A generator of a zipfian distribution. It produces a sequence of items, such that some items are more popular than
- * others, according to a zipfian distribution. When you construct an instance of this class, you specify the number
- * of items in the set to draw from, either by specifying an itemcount (so that the sequence is of items from 0 to
- * itemcount-1) or by specifying a min and a max (so that the sequence is of items from min to max inclusive). After
- * you construct the instance, you can change the number of items by calling nextInt(itemcount) or nextLong(itemcount).
+ * A generator of a zipfian distribution. It produces a sequence of items, such
+ * that some items are more popular than others, according to a zipfian
+ * distribution. When you construct an instance of this class, you specify the
+ * number of items in the set to draw from, either by specifying an itemcount
+ * (so that the sequence is of items from 0 to itemcount-1) or by specifying a
+ * min and a max (so that the sequence is of items from min to max inclusive).
+ * After you construct the instance, you can change the number of items by
+ * calling nextInt(itemcount) or nextLong(itemcount).
  * <p>
- * Unlike @ZipfianGenerator, this class scatters the "popular" items across the itemspace. Use this, instead of
- * @ZipfianGenerator, if you don't want the head of the distribution (the popular items) clustered together.
+ * Unlike @ZipfianGenerator, this class scatters the "popular" items across the
+ * itemspace. Use this, instead of @ZipfianGenerator, if you don't want the head
+ * of the distribution (the popular items) clustered together.
  */
 public class ScrambledZipfianGenerator extends NumberGenerator {
-  public static final double ZETAN = 26.46902820178302;
-  public static final double USED_ZIPFIAN_CONSTANT = 0.99;
+  public static final double[]ZETAN=
+  {26.46902820178302, 199998.53966048692, 24998.047340051293, 3330.554945037713, 495.56246159913144, 90.569885982098};
+
+  public static final double[]USED_ZIPFIAN_CONSTANT=
+  {0.99, 0.5, 0.6, 0.7, 0.8, 0.9};
   public static final long ITEM_COUNT = 10000000000L;
 
   private ZipfianGenerator gen;
   private final long min, max, itemcount;
 
-  /******************************* Constructors **************************************/
+  /*******************************
+   * Constructors
+   **************************************/
 
   /**
    * Create a zipfian generator for the specified number of items.
@@ -59,23 +68,23 @@ public class ScrambledZipfianGenerator extends NumberGenerator {
   }
 
   /**
-   * Create a zipfian generator for the specified number of items using the specified zipfian constant.
+   * Create a zipfian generator for the specified number of items using the
+   * specified zipfian constant.
    *
-   * @param _items The number of items in the distribution.
+   * @param _items           The number of items in the distribution.
    * @param _zipfianconstant The zipfian constant to use.
    */
   /*
-// not supported, as the value of zeta depends on the zipfian constant, and we have only precomputed zeta for one
-zipfian constant
-  public ScrambledZipfianGenerator(long _items, double _zipfianconstant)
-  {
-    this(0,_items-1,_zipfianconstant);
-  }
-*/
+   * // not supported, as the value of zeta depends on the zipfian constant, and
+   * we have only precomputed zeta for one zipfian constant public
+   * ScrambledZipfianGenerator(long _items, double _zipfianconstant) {
+   * this(0,_items-1,_zipfianconstant); }
+   */
 
   /**
-   * Create a zipfian generator for items between min and max (inclusive) for the specified zipfian constant. If you
-   * use a zipfian constant other than 0.99, this will take a long time to complete because we need to recompute zeta.
+   * Create a zipfian generator for items between min and max (inclusive) for the
+   * specified zipfian constant. If you use a zipfian constant other than 0.99,
+   * this will take a long time to complete because we need to recompute zeta.
    *
    * @param min             The smallest integer to generate in the sequence.
    * @param max             The largest integer to generate in the sequence.
@@ -85,9 +94,16 @@ zipfian constant
     this.min = min;
     this.max = max;
     itemcount = this.max - this.min + 1;
-    if (zipfianconstant == USED_ZIPFIAN_CONSTANT) {
-      gen = new ZipfianGenerator(0, ITEM_COUNT, zipfianconstant, ZETAN);
-    } else {
+    int index = 0;
+    boolean notFound = true;
+    for (; index < 6; ++index) {
+      if (zipfianconstant == USED_ZIPFIAN_CONSTANT[index]) {
+        gen = new ZipfianGenerator(0, ITEM_COUNT, zipfianconstant, ZETAN[index]);
+        notFound = false;
+        break;
+      }
+    }
+    if (notFound) {
       gen = new ZipfianGenerator(0, ITEM_COUNT, zipfianconstant);
     }
   }
@@ -118,7 +134,8 @@ zipfian constant
   }
 
   /**
-   * since the values are scrambled (hopefully uniformly), the mean is simply the middle of the range.
+   * since the values are scrambled (hopefully uniformly), the mean is simply the
+   * middle of the range.
    */
   @Override
   public double mean() {
